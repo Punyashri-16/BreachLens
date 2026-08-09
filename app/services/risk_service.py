@@ -1,33 +1,8 @@
-"""
-Business risk calculation.
-
-Turns a raw traversal result into the four numbers a business person
-cares about: how bad is this, how far does it spread, what critical
-systems are involved, and what does it mean commercially.
-"""
-
-# How much less a system matters per hop of distance.
-# 0.7 means a system 2 hops away counts 70% as much as one 1 hop away,
-# and 3 hops away counts 49%. An attacker CAN get there, but it takes
-# more steps, more time, and there are more chances to detect them.
 DISTANCE_DECAY = 0.7
-
-# Criticality at or above this level counts as a critical asset.
 CRITICAL_THRESHOLD = 4
 
 
 def compute_risk_score(graph, reachable, start_asset_id):
-    """
-    A single 0 to 100 number.
-
-    Every reachable asset contributes its criticality, reduced by how far
-    away it sits. We divide by the theoretical worst case, which is every
-    other asset in the company being reachable in a single hop.
-
-    So 100 would mean total immediate compromise of everything, and a low
-    score means the attacker is either boxed in or a long way from
-    anything that matters.
-    """
     if not reachable:
         return 0.0
 
@@ -49,12 +24,6 @@ def compute_risk_score(graph, reachable, start_asset_id):
 
 
 def compute_blast_radius(graph, reachable):
-    """
-    How much of the company the attacker can touch.
-
-    Count and percentage, plus a breakdown by hop distance so the
-    frontend can show how the compromise spreads outward.
-    """
     total_others = graph.number_of_nodes() - 1
     count = len(reachable)
 
@@ -72,12 +41,6 @@ def compute_blast_radius(graph, reachable):
 
 
 def identify_critical_assets(reachable):
-    """
-    The systems that would genuinely hurt to lose.
-
-    Sorted by criticality first, then by how close they are, so the
-    most severe and most immediately reachable appear at the top.
-    """
     critical = [
         {
             "asset_id": item["asset_id"],
@@ -98,13 +61,6 @@ def identify_critical_assets(reachable):
 
 
 def compute_business_impact(reachable):
-    """
-    What this means commercially.
-
-    Total records exposed, which business units are affected, and the
-    single worst asset reached. Records are the number that lands with
-    non-technical people, because it maps to regulatory exposure.
-    """
     total_records = sum(item.get("record_count", 0) for item in reachable)
 
     units = {}
@@ -140,11 +96,6 @@ def compute_business_impact(reachable):
 
 
 def assess(graph, bfs_result):
-    """
-    Run all four and return one dictionary.
-
-    This is what POST /simulate calls.
-    """
     reachable = bfs_result["reachable"]
     start = bfs_result["start_asset"]
 

@@ -1,15 +1,5 @@
-"""
-Forty assets making up the synthetic enterprise.
-
-criticality is 1 to 5, where 5 means losing it is a material business event.
-record_count is 0 for systems that hold no customer or employee records.
-"""
-
 ASSETS = [
 
-    # ---------- IDENTITY (6) ----------
-    # Identity systems are the top of the graph. Whoever controls these
-    # controls almost everything downstream, so criticality runs high.
     {"id": "okta", "name": "Okta SSO", "type": "identity",
      "criticality": 5, "business_unit": "IT", "record_count": 1200},
     {"id": "active_directory", "name": "Active Directory", "type": "identity",
@@ -23,8 +13,6 @@ ASSETS = [
     {"id": "mfa_service", "name": "MFA Service", "type": "identity",
      "criticality": 4, "business_unit": "Security", "record_count": 1200},
 
-    # ---------- CODE (7) ----------
-    # Code systems matter because credentials leak into them.
     {"id": "github_org", "name": "GitHub Organisation", "type": "code",
      "criticality": 4, "business_unit": "Engineering", "record_count": 0},
     {"id": "repo_payments", "name": "payments-api Repository", "type": "code",
@@ -40,7 +28,6 @@ ASSETS = [
     {"id": "sonarqube", "name": "SonarQube", "type": "code",
      "criticality": 2, "business_unit": "Engineering", "record_count": 0},
 
-    # ---------- CLOUD (8) ----------
     {"id": "aws_prod_account", "name": "AWS Production Account", "type": "cloud",
      "criticality": 5, "business_unit": "Engineering", "record_count": 0},
     {"id": "aws_dev_account", "name": "AWS Development Account", "type": "cloud",
@@ -58,8 +45,6 @@ ASSETS = [
     {"id": "cloudflare", "name": "Cloudflare DNS", "type": "cloud",
      "criticality": 4, "business_unit": "IT", "record_count": 0},
 
-    # ---------- DATA (7) ----------
-    # The crown jewels. High criticality and high record counts.
     {"id": "customer_db", "name": "Customer Database", "type": "data",
      "criticality": 5, "business_unit": "Sales", "record_count": 2400000},
     {"id": "production_db", "name": "Production Database", "type": "data",
@@ -75,9 +60,6 @@ ASSETS = [
     {"id": "elasticsearch", "name": "Elasticsearch Cluster", "type": "data",
      "criticality": 3, "business_unit": "Engineering", "record_count": 950000},
 
-    # ---------- COLLABORATION (6) ----------
-    # Low criticality on their own, but they hold credentials in messages
-    # and wiki pages, which is how attackers move onward.
     {"id": "slack", "name": "Slack Workspace", "type": "collaboration",
      "criticality": 3, "business_unit": "All", "record_count": 0},
     {"id": "confluence", "name": "Confluence Wiki", "type": "collaboration",
@@ -91,7 +73,7 @@ ASSETS = [
     {"id": "zoom", "name": "Zoom", "type": "collaboration",
      "criticality": 2, "business_unit": "All", "record_count": 0},
 
-    # ---------- BUSINESS (6) ----------
+
     {"id": "payroll", "name": "Payroll System", "type": "business",
      "criticality": 5, "business_unit": "Finance", "record_count": 1200},
     {"id": "hr_portal", "name": "HR Portal", "type": "business",

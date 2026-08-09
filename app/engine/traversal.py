@@ -1,31 +1,7 @@
-"""
-Graph traversal.
-
-This is the heart of the project. It answers the question:
-"if an attacker controls this one asset, what else can they reach?"
-
-Nothing here is scripted. The attack paths come out of walking the graph
-over facts that were seeded independently of each other.
-"""
-
 from collections import deque
 
 
 def run_bfs(graph, start_asset_id, max_hops=None):
-    """
-    Breadth-first search outward from one asset.
-
-    BFS explores in rings: everything one hop away, then everything two
-    hops away, and so on. Because it moves outward evenly, the first time
-    it arrives at a node it has arrived by the shortest route, so hop
-    counts are correct without any extra work.
-
-    Returns a dictionary containing the start asset, the list of reachable
-    assets with their hop count and path, and the total count.
-    """
-
-    # An unknown start id returns an empty result rather than raising,
-    # so a bad request cannot take the API down.
     if start_asset_id not in graph:
         return {
             "start_asset": start_asset_id,
@@ -34,11 +10,8 @@ def run_bfs(graph, start_asset_id, max_hops=None):
             "error": f"Asset '{start_asset_id}' is not in the graph",
         }
 
-    # visited maps each node to the path taken to reach it.
     visited = {start_asset_id: [start_asset_id]}
 
-    # deque holds (node, hop count). popleft() takes from the front,
-    # which is what makes this breadth-first rather than depth-first.
     queue = deque([(start_asset_id, 0)])
 
     reachable = []
@@ -51,9 +24,6 @@ def run_bfs(graph, start_asset_id, max_hops=None):
 
         for neighbour in graph.successors(current):
 
-            # Already seen means we already reached it by a shorter or
-            # equal route, so skip it. This is also what stops cycles
-            # from looping forever.
             if neighbour in visited:
                 continue
 
@@ -82,7 +52,6 @@ def run_bfs(graph, start_asset_id, max_hops=None):
 
             queue.append((neighbour, hops + 1))
 
-    # Nearest first, so the frontend can animate outward naturally.
     reachable.sort(key=lambda r: (r["hops"], r["asset_id"]))
 
     return {
@@ -94,16 +63,6 @@ def run_bfs(graph, start_asset_id, max_hops=None):
 
 
 def get_attack_path(graph, start_asset_id, target_asset_id):
-    """
-    The specific route from one asset to another, step by step.
-
-    Used by the /bob endpoint. When a judge asks why the customer
-    database is compromised, this returns the real path, and the AI
-    only puts it into sentences.
-
-    Returns None if no path exists.
-    """
-
     if start_asset_id not in graph or target_asset_id not in graph:
         return None
 
@@ -118,8 +77,6 @@ def get_attack_path(graph, start_asset_id, target_asset_id):
 
     path = match["path"]
 
-    # Turn the list of node ids into a list of steps carrying the
-    # mechanism and MITRE technique used at each hop.
     steps = []
     for i in range(len(path) - 1):
         source, target = path[i], path[i + 1]

@@ -1,8 +1,3 @@
-"""
-Hits every endpoint through HTTP. Start uvicorn first, in another terminal.
-Run with:  python -m app.test_routes
-"""
-
 import json
 import urllib.request
 

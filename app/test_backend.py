@@ -1,12 +1,3 @@
-"""
-Backend health check.
-
-Run with:  python -m app.test_backend
-
-Tests every layer bottom-up. If something fails, the layer it fails at
-tells you where the problem is.
-"""
-
 from app.database.connection import assets, edges, mitre, scenarios, check_connection
 from app.engine.graph_builder import build_graph
 from app.engine.traversal import run_bfs, get_attack_path
@@ -86,7 +77,6 @@ check("critical assets found", len(risk["critical_assets"]) > 0, f"({len(risk['c
 check("records computed", risk["business_impact"]["records_exposed"] > 0,
       f"({risk['business_impact']['records_exposed']:,})")
 
-# The engine must react to the input, not replay a script.
 r2 = run_bfs(g, "zendesk")
 risk2 = assess(g, r2)
 check("different start gives different score",

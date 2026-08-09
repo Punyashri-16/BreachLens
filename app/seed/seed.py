@@ -1,12 +1,3 @@
-"""
-Seed runner.
-
-Wipes the four reference collections and rewrites them from the seed files.
-Safe to run as many times as you like — it always ends in the same state.
-
-Run it with:  python -m app.seed.seed
-"""
-
 from app.database.connection import assets, edges, mitre, scenarios, check_connection
 
 from app.seed.assets_data import ASSETS
@@ -16,11 +7,6 @@ from app.seed.scenarios_data import SCENARIOS
 
 
 def validate():
-    """
-    Check the data makes sense before writing anything.
-    Catching a bad id here is much easier than debugging it later
-    when the graph silently has a missing node.
-    """
     asset_ids = {a["id"] for a in ASSETS}
     technique_ids = {m["technique_id"] for m in MITRE_TECHNIQUES}
     problems = []
@@ -58,8 +44,7 @@ def run_seed():
     print("Connected to MongoDB.\n")
 
     validate()
-
-    # Delete first so re-running never creates duplicates.
+    
     assets.delete_many({})
     edges.delete_many({})
     mitre.delete_many({})

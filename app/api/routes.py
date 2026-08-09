@@ -1,12 +1,3 @@
-"""
-API routes.
-
-All endpoints live here. The router is included by app/main.py.
-
-Rule for every route: catch errors and return clean JSON. A bad request
-must never take the server down mid-demo.
-"""
-
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
@@ -30,17 +21,8 @@ from app.models.schemas import (
 router = APIRouter()
 
 
-# ==================================================================
-# GET /graph
-# ==================================================================
 @router.get("/graph")
 def get_graph():
-    """
-    The whole asset graph, ready for the frontend to draw.
-
-    Returns a nodes list and an edges list. Most graph libraries in
-    JavaScript expect exactly this shape.
-    """
     try:
         graph = build_graph()
 
@@ -91,12 +73,8 @@ def get_graph():
         raise HTTPException(status_code=500, detail="Could not build the graph")
 
 
-# ==================================================================
-# GET /scenarios
-# ==================================================================
 @router.get("/scenarios")
 def list_scenarios():
-    """All available scenarios, so the frontend can build a picker."""
     try:
         return {"scenarios": list(scenarios.find({}, {"_id": 0}))}
     except Exception as error:
@@ -104,22 +82,11 @@ def list_scenarios():
         raise HTTPException(status_code=500, detail="Could not load scenarios")
 
 
-# ==================================================================
-# POST /simulate
-# ==================================================================
 @router.post("/simulate")
 def simulate(request: SimulateRequest):
-    """
-    Run an attack simulation.
-
-    Accepts either a scenario_id or a start_asset. Walks the graph from
-    that point, computes the risk figures, maps the MITRE techniques,
-    saves an incident record, and returns everything.
-    """
     try:
         graph = build_graph()
 
-        # ---------- work out where to start ----------
         scenario = None
         start_asset = request.start_asset
 
@@ -144,16 +111,12 @@ def simulate(request: SimulateRequest):
                 detail=f"Asset '{start_asset}' is not in the graph",
             )
 
-        # ---------- walk the graph ----------
         bfs_result = run_bfs(graph, start_asset)
 
-        # ---------- compute the business figures ----------
         risk = assess(graph, bfs_result)
 
-        # ---------- map to MITRE ----------
         techniques = summarise_techniques(bfs_result["reachable"])
 
-        # ---------- the headline path ----------
         data_assets = [
             r for r in bfs_result["reachable"] if r.get("record_count", 0) > 0
         ]
@@ -166,7 +129,6 @@ def simulate(request: SimulateRequest):
             headline_path = get_attack_path(graph, start_asset, target)
             headline_techniques = map_path_to_techniques(headline_path)
 
-        # ---------- assemble ----------
         result = {
             "scenario": scenario,
             "start_asset": start_asset,
@@ -183,7 +145,6 @@ def simulate(request: SimulateRequest):
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        # ---------- save the incident ----------
         incident_doc = {
             "scenario_id": scenario["id"] if scenario else None,
             "scenario_name": scenario["name"] if scenario else "Ad hoc simulation",
@@ -210,21 +171,8 @@ def simulate(request: SimulateRequest):
         raise HTTPException(status_code=500, detail="Simulation failed")
 
 
-# ==================================================================
-# POST /counterfactual
-# ==================================================================
 @router.post("/counterfactual")
 def counterfactual(request: CounterfactualRequest):
-    """
-    Which single connection should we cut first?
-
-    For every edge the attacker can traverse, we remove it, re-run the
-    whole analysis, and measure how far the risk score falls. Then we
-    rank by biggest improvement.
-
-    This is the endpoint that makes the product a decision tool rather
-    than a display tool.
-    """
     try:
         graph = build_graph()
 
@@ -263,19 +211,8 @@ def counterfactual(request: CounterfactualRequest):
         raise HTTPException(status_code=500, detail="Counterfactual analysis failed")
 
 
-# ==================================================================
-# POST /story
-# ==================================================================
 @router.post("/story")
 def story(request: StoryRequest):
-    """
-    Narrate the incident as a sequence of events.
-
-    Takes the simulation result returned by POST /simulate and passes it
-    to the AI service. If the AI is unavailable, the service returns a
-    factual narrative built from the computed numbers instead, so this
-    endpoint never fails.
-    """
     try:
         incident = request.incident
 
@@ -285,8 +222,6 @@ def story(request: StoryRequest):
                 detail="Provide the simulation result in the 'incident' field",
             )
 
-        # The headline path was already computed by /simulate, so we
-        # reuse it rather than walking the graph again.
         attack_path = incident.get("headline_path")
 
         narrative = generate_story(incident, attack_path)
@@ -304,18 +239,8 @@ def story(request: StoryRequest):
         raise HTTPException(status_code=500, detail="Could not generate the story")
 
 
-# ==================================================================
-# POST /recommendations
-# ==================================================================
 @router.post("/recommendations")
 def recommendations(request: RecommendationsRequest):
-    """
-    Ranked remediation actions for this incident.
-
-    Each action names a specific system from the simulation, so the
-    output is tied to what was actually reachable rather than being a
-    generic checklist.
-    """
     try:
         incident = request.incident
 
@@ -327,9 +252,6 @@ def recommendations(request: RecommendationsRequest):
 
         text = generate_recommendations(incident)
 
-        # The AI returns a numbered list as one block of text. Split it
-        # into an array so the frontend can render each action as its
-        # own card instead of one wall of text.
         actions = []
         for line in text.split("\n"):
             line = line.strip()
@@ -359,19 +281,8 @@ def recommendations(request: RecommendationsRequest):
         )
 
 
-# ==================================================================
-# POST /bob
-# ==================================================================
 @router.post("/bob")
 def bob(request: BobRequest):
-    """
-    Answer a question about the current incident.
-
-    The graph computes the facts. The AI only turns them into sentences.
-    So when someone asks why the customer database is compromised, the
-    path in the answer is the real path from our traversal, and it will
-    match the graph if they check.
-    """
     try:
         if not request.question or not request.question.strip():
             raise HTTPException(status_code=400, detail="Provide a question")

@@ -1,19 +1,5 @@
-"""
-Lateral movement edges.
-
-IMPORTANT: these are NOT attack paths. Each edge is a single fact about how
-the company is configured or misconfigured. The attack paths are DISCOVERED
-by running BFS over these facts. Nobody writes a path by hand.
-
-weight = given the attacker controls `source`, how likely are they to obtain
-         `target`. 0.9 is near-certain, 0.3 is a long shot.
-mitre_technique = the ATT&CK technique that describes this movement.
-"""
-
 EDGES = [
 
-    # ---------- PHISHING FOOTHOLD ----------
-    # Email is where most real intrusions begin.
     {"source": "email_gateway", "target": "okta", "relationship_type": "credential_theft",
      "weight": 0.7, "mitre_technique": "T1566",
      "reason": "A phishing page harvests the employee's SSO credentials"},
@@ -22,8 +8,6 @@ EDGES = [
      "weight": 0.6, "mitre_technique": "T1539",
      "reason": "The session cookie is stolen from the compromised browser"},
 
-    # ---------- IDENTITY FANS OUT ----------
-    # Whoever holds SSO holds most of the SaaS estate.
     {"source": "okta", "target": "slack", "relationship_type": "sso_access",
      "weight": 0.9, "mitre_technique": "T1078",
      "reason": "Slack authenticates through Okta SSO"},
@@ -60,8 +44,6 @@ EDGES = [
      "weight": 0.6, "mitre_technique": "T1111",
      "reason": "Control of the MFA service allows enrolling an attacker-owned device"},
 
-    # ---------- COLLABORATION LEAKS CREDENTIALS ----------
-    # These systems are low value themselves and high value as stepping stones.
     {"source": "slack", "target": "confluence", "relationship_type": "credential_reuse",
      "weight": 0.5, "mitre_technique": "T1552",
      "reason": "The same SSO session token is accepted by Confluence"},
@@ -86,8 +68,6 @@ EDGES = [
      "weight": 0.5, "mitre_technique": "T1078",
      "reason": "Jira and GitHub share the same identity provider session"},
 
-    # ---------- CODE HOLDS SECRETS ----------
-    # This is the mechanism that produces non-obvious reachability.
     {"source": "github_org", "target": "repo_payments", "relationship_type": "repo_access",
      "weight": 0.9, "mitre_technique": "T1213",
      "reason": "Organisation membership grants read access to the repository"},
@@ -128,7 +108,6 @@ EDGES = [
      "weight": 0.7, "mitre_technique": "T1195",
      "reason": "A poisoned image is pulled and run by the Kubernetes cluster"},
 
-    # ---------- CLOUD CONTROL PLANE ----------
     {"source": "vault", "target": "aws_prod_account", "relationship_type": "secret_access",
      "weight": 0.85, "mitre_technique": "T1552",
      "reason": "Vault issues dynamic AWS credentials for the production account"},
@@ -165,7 +144,6 @@ EDGES = [
      "weight": 0.85, "mitre_technique": "T1530",
      "reason": "Log buckets live inside this AWS account and can be tampered with"},
 
-    # ---------- REACHING THE DATA ----------
     {"source": "eks_cluster", "target": "production_db", "relationship_type": "credential_theft",
      "weight": 0.75, "mitre_technique": "T1552",
      "reason": "Database credentials are mounted as Kubernetes secrets in running pods"},
@@ -243,7 +221,6 @@ EDGES = [
      "weight": 0.5, "mitre_technique": "T1078",
      "reason": "DocuSign authenticates using Google Workspace identity"},
 
-    # ---------- MISC ----------
     {"source": "zoom", "target": "slack", "relationship_type": "credential_reuse",
      "weight": 0.3, "mitre_technique": "T1078",
      "reason": "Both use the same corporate identity, so one session hints at the other"},

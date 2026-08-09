@@ -1,15 +1,3 @@
-"""
-AI service.
-
-Joins the prompt builders to the Gemini client. Each function takes a
-simulation result, builds the right prompt, sends it, and returns text.
-
-Every call passes a fallback built from the computed numbers, so a dead
-API key, an exhausted quota or no network still produces a correct and
-readable answer. The user never sees an error. This is what stops the
-demo failing on stage.
-"""
-
 from app.ai.client import generate, is_available
 from app.ai.prompts import (
     build_story_prompt,
@@ -17,13 +5,6 @@ from app.ai.prompts import (
     build_executive_prompt,
     build_soc_prompt,
 )
-
-
-# ------------------------------------------------------------------
-# FALLBACK BUILDERS
-# These write plain text straight from the engine's numbers.
-# No AI involved, so they always work and they are always accurate.
-# ------------------------------------------------------------------
 
 def _facts(result):
     """Pull the figures used by every fallback."""
@@ -114,14 +95,7 @@ def _fallback_soc(result, attack_path, techniques):
         parts.append(f"- Sever {via} to {c['asset_id']} ({c['hops']} hops from entry).")
     return "\n".join(parts)
 
-
-# ------------------------------------------------------------------
-# PUBLIC FUNCTIONS
-# These are what the routes call.
-# ------------------------------------------------------------------
-
 def generate_story(result, attack_path=None):
-    """Narrative of what happened, for a general audience."""
     return generate(
         build_story_prompt(result, attack_path),
         temperature=0.4,
@@ -130,7 +104,6 @@ def generate_story(result, attack_path=None):
 
 
 def generate_recommendations(result):
-    """Ranked remediation actions tied to specific systems."""
     return generate(
         build_recommendations_prompt(result),
         temperature=0.2,
@@ -139,7 +112,6 @@ def generate_recommendations(result):
 
 
 def generate_executive_summary(result):
-    """Four sentences for leadership, no jargon."""
     return generate(
         build_executive_prompt(result),
         temperature=0.3,
@@ -148,7 +120,6 @@ def generate_executive_summary(result):
 
 
 def generate_soc_summary(result, attack_path=None, techniques=None):
-    """Technical briefing for a security analyst."""
     return generate(
         build_soc_prompt(result, attack_path, techniques),
         temperature=0.2,
@@ -157,10 +128,6 @@ def generate_soc_summary(result, attack_path=None, techniques=None):
 
 
 def generate_all(result, attack_path=None, techniques=None):
-    """
-    All four at once. Used by the reporting endpoint.
-    Note this makes four API calls, so avoid it on a tight quota.
-    """
     return {
         "story": generate_story(result, attack_path),
         "recommendations": generate_recommendations(result),

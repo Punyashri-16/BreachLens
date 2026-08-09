@@ -1,23 +1,4 @@
-"""
-Prompt builders.
-
-Each function turns a computed simulation result into a prompt string.
-Nothing here calls the AI — these only build text. The client sends it.
-
-Design rule: every number in these prompts comes from the engine. The
-model is told to explain the figures it is given and never to invent
-new ones. If a judge asks whether the AI is making numbers up, the
-answer is no, and this file is where you show them why.
-"""
-
-
 def _summarise_context(result):
-    """
-    Shared context block used by all four prompts.
-
-    Pulls the key figures out of a simulation result so each prompt
-    starts from the same set of facts.
-    """
     scenario = result.get("scenario", {})
     risk = result.get("risk_score", 0)
     blast = result.get("blast_radius", {})
@@ -47,29 +28,21 @@ def _summarise_context(result):
 
 
 def _format_path(attack_path):
-    """Turn an attack path into readable numbered steps."""
     if not attack_path or not attack_path.get("steps"):
         return "No specific path available."
 
     lines = []
+
     for step in attack_path["steps"]:
         lines.append(
             f"{step['step']}. {step['from_name']} to {step['to_name']} "
             f"({step['relationship_type']}, {step['mitre_technique']}): {step['reason']}"
         )
+
     return "\n".join(lines)
 
 
-# ------------------------------------------------------------------
-# 1. INCIDENT STORY
-# ------------------------------------------------------------------
 def build_story_prompt(result, attack_path=None):
-    """
-    Narrate the incident as a sequence of events.
-
-    Written for anyone in the company to read. The goal is that a person
-    who has never seen a security tool understands what happened.
-    """
     return f"""You are a cybersecurity analyst writing an incident narrative.
 
 Here are the facts of the incident:
@@ -82,6 +55,7 @@ How the attacker moved:
 Write a clear narrative of what happened, in 4 to 6 short paragraphs.
 
 Rules:
+
 - Write in past tense, as a sequence of events.
 - Explain each step in plain English. If you must use a technical term, explain it in the same sentence.
 - Use only the facts given above. Do not invent systems, numbers, dates or people.
@@ -91,14 +65,9 @@ Rules:
 """
 
 
-# ------------------------------------------------------------------
-# 2. RECOMMENDATIONS
-# ------------------------------------------------------------------
 def build_recommendations_prompt(result):
-    """
-    Specific remediation actions, tied to the assets actually reached.
-    """
     critical = result.get("critical_assets", [])[:10]
+
     critical_lines = "\n".join(
         f"- {c['name']} ({c['business_unit']}, criticality {c['criticality']}, "
         f"{c['hops']} steps away, reached via {' then '.join(c['path'][-2:])})"
@@ -107,8 +76,10 @@ def build_recommendations_prompt(result):
 
     reachable = result.get("reachable", [])
     nearby = [r for r in reachable if r["hops"] == 1][:8]
+
     nearby_lines = "\n".join(
-        f"- {r['name']}: {r['reached_via']['reason']}" for r in nearby
+        f"- {r['name']}: {r['reached_via']['reason']}"
+        for r in nearby
     ) or "None."
 
     return f"""You are a cybersecurity analyst recommending remediation actions.
@@ -126,6 +97,7 @@ The first systems reached from the entry point, and why they were reachable:
 Produce between 5 and 7 recommended actions.
 
 Rules:
+
 - Order them by urgency, most urgent first.
 - Each action must name a specific system from the lists above.
 - Each action must be something a person could actually do this week.
@@ -136,15 +108,10 @@ Rules:
 """
 
 
-# ------------------------------------------------------------------
-# 3. EXECUTIVE SUMMARY
-# ------------------------------------------------------------------
 def build_executive_prompt(result):
-    """
-    For management. No jargon at all. Business consequences only.
-    """
     impact = result.get("business_impact", {})
     units = impact.get("affected_units", [])[:5]
+
     unit_lines = "\n".join(
         f"- {u['business_unit']}: {u['assets']} systems, {u['records']:,} records"
         for u in units
@@ -163,6 +130,7 @@ Business units affected:
 Write exactly 4 sentences.
 
 Rules:
+
 - Sentence 1: what happened, in business terms.
 - Sentence 2: what is at risk, using the records number and the business units.
 - Sentence 3: how serious this is compared to a normal incident, using the risk score.
@@ -173,14 +141,9 @@ Rules:
 """
 
 
-# ------------------------------------------------------------------
-# 4. SOC SUMMARY
-# ------------------------------------------------------------------
 def build_soc_prompt(result, attack_path=None, techniques=None):
-    """
-    For a security operations analyst. Technical language expected.
-    """
     technique_lines = "None mapped."
+
     if techniques and techniques.get("techniques"):
         technique_lines = "\n".join(
             f"- {t['technique_id']} {t['name']} ({t['tactic']}), "
@@ -189,6 +152,7 @@ def build_soc_prompt(result, attack_path=None, techniques=None):
         )
 
     return f"""You are writing a summary for a security operations centre analyst.
+
 They are technical and expect precise language.
 
 Incident facts:
@@ -215,6 +179,7 @@ Containment priority
 Two bullet points naming the specific transitions to break first and why.
 
 Rules:
+
 - Use the technique ids given above. Do not cite any technique not listed.
 - Reference systems by their exact names.
 - Be concise. This is a briefing, not an essay.

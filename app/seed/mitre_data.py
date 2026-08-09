@@ -1,13 +1,5 @@
-"""
-MITRE ATT&CK techniques referenced by the edges file.
-
-Every mitre_technique id used in edges_data.py must have an entry here,
-otherwise the MITRE service will fail to look it up.
-"""
-
 MITRE_TECHNIQUES = [
 
-    # ---------- INITIAL ACCESS ----------
     {
         "technique_id": "T1566",
         "name": "Phishing",
@@ -21,7 +13,6 @@ MITRE_TECHNIQUES = [
         "description": "An attacker takes control of infrastructure such as DNS records to redirect or intercept legitimate traffic.",
     },
 
-    # ---------- CREDENTIAL ACCESS ----------
     {
         "technique_id": "T1552",
         "name": "Unsecured Credentials",
@@ -47,7 +38,6 @@ MITRE_TECHNIQUES = [
         "description": "An attacker repeatedly guesses passwords or reuses credentials leaked from other breaches.",
     },
 
-    # ---------- LATERAL MOVEMENT / PRIVILEGE ESCALATION ----------
     {
         "technique_id": "T1078",
         "name": "Valid Accounts",
@@ -73,7 +63,6 @@ MITRE_TECHNIQUES = [
         "description": "An attacker moves between systems using tokens, keys or hashes instead of a password.",
     },
 
-    # ---------- COLLECTION / DISCOVERY ----------
     {
         "technique_id": "T1213",
         "name": "Data from Information Repositories",
@@ -87,7 +76,6 @@ MITRE_TECHNIQUES = [
         "description": "An attacker enumerates user accounts and groups to identify which identities are worth targeting next.",
     },
 
-    # ---------- SUPPLY CHAIN ----------
     {
         "technique_id": "T1195",
         "name": "Supply Chain Compromise",
@@ -95,7 +83,6 @@ MITRE_TECHNIQUES = [
         "description": "An attacker inserts malicious code into the build pipeline or a dependency so it is deployed by trusted automation.",
     },
 
-    # ---------- EXFILTRATION / IMPACT ----------
     {
         "technique_id": "T1530",
         "name": "Data from Cloud Storage Object",

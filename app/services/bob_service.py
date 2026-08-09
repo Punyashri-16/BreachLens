@@ -1,17 +1,3 @@
-"""
-Bob — the question answering service.
-
-The important idea: the backend computes the facts, the AI only explains
-them. When someone asks "why is the customer database compromised?", the
-path in the answer is the real path from the graph, not something the
-model made up.
-
-Flow:
-  question text  ->  work out which asset it is about
-                 ->  compute the real answer from the graph
-                 ->  give both to the AI and ask it to explain
-"""
-
 import re
 
 from app.engine.graph_builder import build_graph
@@ -19,8 +5,6 @@ from app.engine.traversal import get_attack_path
 from app.services.mitre_service import map_path_to_techniques
 from app.ai.client import generate
 
-
-# Words that signal what kind of question this is.
 INTENT_WORDS = {
     "path": ["how", "why", "reach", "reached", "get to", "access", "compromis", "route", "path"],
     "risk": ["risk", "score", "how bad", "severity", "serious"],
@@ -31,13 +15,6 @@ INTENT_WORDS = {
 
 
 def _find_asset(graph, question):
-    """
-    Work out which asset the question is about.
-
-    Checks full names first ("Customer Database"), then asset ids
-    ("customer_db"), then the id with underscores as spaces.
-    Returns the asset id, or None if no asset is mentioned.
-    """
     text = question.lower()
     matches = []
 
@@ -55,13 +32,11 @@ def _find_asset(graph, question):
     if not matches:
         return None
 
-    # Longest match wins, so "customer database" beats "database".
     matches.sort(key=lambda m: -m[1])
     return matches[0][0]
 
 
 def _find_intent(question):
-    """Classify the question. Defaults to 'path'."""
     text = question.lower()
     for intent, words in INTENT_WORDS.items():
         if any(w in text for w in words):
@@ -70,10 +45,6 @@ def _find_intent(question):
 
 
 def _compute_facts(graph, question, incident):
-    """
-    Build the factual answer from the graph. No AI here at all.
-    Returns a dictionary of facts plus a readable text block.
-    """
     start = incident.get("start_asset")
     reachable = incident.get("reachable", [])
     asset_id = _find_asset(graph, question)
@@ -88,7 +59,6 @@ def _compute_facts(graph, question, incident):
         f"Records exposed: {incident.get('business_impact', {}).get('records_exposed', 0):,}",
     ]
 
-    # If a specific asset was named, compute the real path to it.
     if asset_id and start:
         entry = next((r for r in reachable if r["asset_id"] == asset_id), None)
 
@@ -126,7 +96,6 @@ def _compute_facts(graph, question, incident):
                 )
                 lines.append(f"\nTechniques used along this route: {names}")
 
-    # Extra context depending on what was asked.
     if intent in ("fix", "path") and incident.get("critical_assets"):
         lines.append("\nMost critical systems reached:")
         for c in incident["critical_assets"][:5]:
@@ -148,10 +117,6 @@ def _compute_facts(graph, question, incident):
 
 
 def _fallback_answer(facts, question):
-    """
-    A plain answer built straight from the computed facts, used when the
-    AI is unavailable. Less fluent, but completely correct.
-    """
     if facts.get("reachable") is False:
         return "That system is not reachable in this incident."
 
@@ -170,13 +135,6 @@ def _fallback_answer(facts, question):
 
 
 def ask_bob(question, incident):
-    """
-    Answer a question about the current incident.
-
-    The graph produces the facts. The model only turns them into
-    sentences. If the model is unavailable, the factual answer is
-    returned directly.
-    """
     if not question or not question.strip():
         return {
             "question": question,

@@ -1,11 +1,3 @@
-"""
-Attack scenarios. Each one is just a starting point in the graph.
-
-The simulation runs BFS outward from start_asset, so choosing a different
-scenario produces a genuinely different attack path, a different set of
-reachable assets, and a different risk score. Nothing is scripted.
-"""
-
 SCENARIOS = [
 
     {

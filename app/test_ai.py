@@ -25,7 +25,3 @@ print(ai._fallback_story(result, path))
 
 print("\n--- SOC ---")
 print(ai._fallback_soc(result, path, techniques))
-
-# Uncomment to try the real AI once your key works.
-# print("\n--- LIVE AI EXECUTIVE ---")
-# print(ai.generate_executive_summary(result))
