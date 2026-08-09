@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getScenarios, simulate, getGraph } from "./api/client";
 import ScenarioPicker from "./components/ScenarioPicker";
 import Metrics from "./components/Metrics";
 import AttackPath from "./components/AttackPath";
-import Counterfactual from "./components/Counterfactual";
-import AskBob from "./components/AskBob";
+import MitreAndActions from "./components/MitreAndActions";
 import GraphVisualization from "./components/GraphVisualization";
+import AskBob from "./components/AskBob";
+import Counterfactual from "./components/Counterfactual";
 import "./App.css";
 
 export default function App() {
   const [scenarios, setScenarios] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState("SC004");
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState(null);
@@ -24,6 +25,9 @@ export default function App() {
     getGraph()
       .then((g) => setGraphData(g))
       .catch(() => {});
+
+    // Run default scenario SC004 Developer takeover on startup
+    run("SC004");
   }, []);
 
   async function run(scenarioId) {
@@ -31,17 +35,12 @@ export default function App() {
     setResult(null);
     setError(null);
 
-    // Progressive status updates for realistic analysis feedback
-    setStatus("Employee clicked the link...");
-    setTimeout(() => setStatus("Mapping accessible systems across 40 nodes..."), 700);
-    setTimeout(() => setStatus("Calculating blast radius & record exposure..."), 1400);
+    setStatus("Mapping accessible systems...");
 
     try {
       const data = await simulate(scenarioId);
-      setTimeout(() => {
-        setStatus("");
-        setResult(data);
-      }, 2100);
+      setStatus("");
+      setResult(data);
     } catch (e) {
       setStatus("");
       setError(e.message);
@@ -50,16 +49,19 @@ export default function App() {
 
   return (
     <div className="page">
-      <div className="header-brand">
-        <span style={{ fontSize: 28 }}>🛡️</span>
-        <h1>BreachLens</h1>
+      {/* 1. Header Bar matching photo */}
+      <div className="header-bar">
+        <div className="header-title">
+          <span style={{ fontSize: 22 }}>🌀</span> BreachLens
+        </div>
+        <div className="header-badge">
+          GET /graph &middot; 40 assets
+        </div>
       </div>
-      <p className="muted" style={{ margin: "0 0 24px 0", fontSize: 14 }}>
-        Automated Security Graph Traversal — If one system is compromised, how far can the attacker get?
-      </p>
 
-      {error && <div className="card" style={{ borderColor: "#ef4444" }}>Error: {error}</div>}
+      {error && <div className="card" style={{ borderColor: "#ef4444", color: "#dc2626" }}>Error: {error}</div>}
 
+      {/* 2. Scenario Picker matching photo */}
       <ScenarioPicker
         scenarios={scenarios}
         selected={selected}
@@ -69,27 +71,29 @@ export default function App() {
 
       {status && (
         <div className="card muted" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ animation: "spin 1s infinite linear" }}>⏳</span>
-          {status}
+          <span>⏳</span> {status}
         </div>
       )}
 
       {result && (
         <>
-          <h2>📊 {result.scenario?.name}</h2>
+          {/* 3. Metric Cards matching photo */}
           <Metrics result={result} />
 
-          <h2>🔍 How the Attacker Moves</h2>
+          {/* 4. Attack Path matching photo */}
           <AttackPath result={result} />
 
-          <h2>🌐 Network Topology & Attack Traversal Graph</h2>
+          {/* 5. 2-Column Split: MITRE techniques & Recommended actions matching photo */}
+          <MitreAndActions result={result} />
+
+          {/* 6. Interactive Network Graph (Bigger & Spaced) */}
           <GraphVisualization result={result} graphData={graphData} />
 
-          <h2>🛠️ Recommended Action ("What to Fix First")</h2>
-          <Counterfactual scenarioId={selected} />
-
-          <h2>💬 Ask Bob & Business Impact</h2>
+          {/* 7. Ask about this incident matching photo */}
           <AskBob incident={result} />
+
+          {/* 8. What to fix first / Counterfactual Analysis */}
+          <Counterfactual scenarioId={selected} />
         </>
       )}
     </div>

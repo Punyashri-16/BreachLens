@@ -1,40 +1,45 @@
 import React, { useRef, useEffect, useState } from "react";
 import { MOCK_NODES, MOCK_EDGES } from "../data/mockGraphData";
 
-// Categorized 6 Tier Zones for the 40 nodes to ensure wide spacing and zero label overlap
-const TIER_CONFIG = {
-  perimeter: { zone: "1. Perimeter & Entry", yRatio: 0.12, icon: "🛡️" },
-  endpoint: { zone: "1. Perimeter & Entry", yRatio: 0.14, icon: "💻" },
-  saas: { zone: "2. Identity & SaaS", yRatio: 0.28, icon: "🔑" },
-  iam: { zone: "2. Identity & SaaS", yRatio: 0.30, icon: "🔒" },
-  scm: { zone: "3. Repos & DevOps", yRatio: 0.46, icon: "📁" },
-  code: { zone: "3. Repos & DevOps", yRatio: 0.48, icon: "💻" },
-  devops: { zone: "3. Repos & DevOps", yRatio: 0.50, icon: "⚙️" },
-  compute: { zone: "4. Cloud & Infrastructure", yRatio: 0.66, icon: "🖥️" },
-  cloud: { zone: "4. Cloud & Infrastructure", yRatio: 0.68, icon: "☁️" },
-  secret: { zone: "4. Cloud & Infrastructure", yRatio: 0.70, icon: "🔐" },
-  database: { zone: "5. Data Stores & Backups", yRatio: 0.86, icon: "🗄️" },
-  storage: { zone: "5. Data Stores & Backups", yRatio: 0.88, icon: "📦" },
-  monitoring: { zone: "5. Data Stores & Backups", yRatio: 0.90, icon: "📊" }
+const TIER_Y = {
+  perimeter: 0.10,
+  endpoint: 0.12,
+  saas: 0.28,
+  iam: 0.30,
+  scm: 0.48,
+  code: 0.50,
+  devops: 0.52,
+  compute: 0.70,
+  cloud: 0.72,
+  secret: 0.74,
+  database: 0.88,
+  storage: 0.90,
+  monitoring: 0.92
 };
 
 export default function GraphVisualization({ result, graphData }) {
   const canvasRef = useRef(null);
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [viewMode, setViewMode] = useState("all"); // "all" | "attack_path"
+  const [viewMode, setViewMode] = useState("all");
+  const [zoom, setZoom] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const nodes = graphData?.nodes || MOCK_NODES;
   const edges = graphData?.edges || MOCK_EDGES;
 
-  // Active attack path sequence from simulation result
   const activePathIds = result?.headline_path?.path || [];
+
+  // Filter nodes based on search query
+  const filteredNodes = nodes.filter(n => 
+    n.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    n.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    // High DPI crisp canvas scaling
     const rect = canvas.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -43,76 +48,57 @@ export default function GraphVisualization({ result, graphData }) {
     canvas.height = height * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    // Calculate node coordinates with staggered offset to eliminate label overlap completely
+    // Compute positions with wide spacing to avoid word overlap
     const nodePos = {};
-    
-    // Group nodes by their tier
     const groups = {};
+
     nodes.forEach(n => {
-      const tierKey = n.type || "compute";
-      if (!groups[tierKey]) groups[tierKey] = [];
-      groups[tierKey].push(n);
+      const tier = n.type || "compute";
+      if (!groups[tier]) groups[tier] = [];
+      groups[tier].push(n);
     });
 
-    // Compute coordinates with horizontal padding and vertical offset staggering
-    Object.keys(groups).forEach(tierKey => {
-      const groupNodes = groups[tierKey];
-      const cfg = TIER_CONFIG[tierKey] || { yRatio: 0.5, icon: "📌" };
-      const baseY = cfg.yRatio * height;
+    Object.keys(groups).forEach(tier => {
+      const tierNodes = groups[tier];
+      const yRatio = TIER_Y[tier] || 0.5;
+      const baseY = yRatio * height;
 
-      groupNodes.forEach((node, idx) => {
-        const spacing = (width - 120) / (groupNodes.length + 1);
-        // Stagger Y slightly between odd and even nodes in the same tier
-        const yOffset = (idx % 2 === 0 ? -16 : 16);
+      tierNodes.forEach((node, idx) => {
+        const spacing = (width - 140) / (tierNodes.length + 1);
+        const staggerY = (idx % 2 === 0 ? -22 : 22);
         nodePos[node.id] = {
-          x: 60 + spacing * (idx + 1),
-          y: Math.max(35, Math.min(height - 40, baseY + yOffset)),
-          labelPosition: idx % 2 === 0 ? "top" : "bottom",
-          icon: cfg.icon,
+          x: 70 + spacing * (idx + 1),
+          y: Math.max(45, Math.min(height - 45, baseY + staggerY)),
+          labelPos: idx % 2 === 0 ? "top" : "bottom",
           node
         };
       });
     });
 
-    let animationFrameId;
-    let pulseTime = 0;
+    let animFrame;
+    let animTime = 0;
 
     const render = () => {
-      pulseTime += 0.05;
+      animTime += 0.04;
       ctx.clearRect(0, 0, width, height);
 
-      // Draw subtle dark sapphire grid
-      ctx.strokeStyle = "rgba(30, 41, 59, 0.4)";
+      // Light grid background
+      ctx.strokeStyle = "rgba(226, 232, 240, 0.6)";
       ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 50) {
+      for (let x = 0; x < width; x += 60) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
       }
-      for (let y = 0; y < height; y += 50) {
+      for (let y = 0; y < height; y += 60) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
       }
 
-      // Draw zone divider markers
-      const zones = [
-        { name: "Perimeter & Endpoints", y: 0.08 * height },
-        { name: "Identity & SaaS Services", y: 0.24 * height },
-        { name: "Repositories & CI/CD Pipelines", y: 0.42 * height },
-        { name: "Cloud Accounts & Compute Infrastructure", y: 0.62 * height },
-        { name: "Databases, Storage & Backups", y: 0.82 * height }
-      ];
-
-      ctx.font = "600 11px system-ui";
-      ctx.fillStyle = "rgba(148, 163, 184, 0.4)";
-      zones.forEach(z => {
-        ctx.fillText(z.name.toUpperCase(), 16, z.y);
-      });
-
-      // Draw edges (58 connections)
+      // Draw Edges (58 connections)
       edges.forEach(edge => {
         const src = nodePos[edge.source];
         const tgt = nodePos[edge.target];
@@ -129,32 +115,32 @@ export default function GraphVisualization({ result, graphData }) {
         ctx.lineTo(tgt.x, tgt.y);
 
         if (isPathEdge) {
-          ctx.strokeStyle = "#ef4444";
-          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = "#dc2626";
+          ctx.lineWidth = 3;
           ctx.setLineDash([8, 4]);
-          ctx.lineDashOffset = -pulseTime * 12;
+          ctx.lineDashOffset = -animTime * 14;
         } else {
-          ctx.strokeStyle = "rgba(51, 65, 85, 0.35)";
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
+          ctx.lineWidth = 1.2;
           ctx.setLineDash([]);
         }
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Animated flow particles along active attack path edges
+        // Animated flow particles along active attack path
         if (isPathEdge) {
-          const progress = (pulseTime * 0.4) % 1;
+          const progress = (animTime * 0.35) % 1;
           const px = src.x + (tgt.x - src.x) * progress;
           const py = src.y + (tgt.y - src.y) * progress;
 
           ctx.beginPath();
-          ctx.arc(px, py, 4, 0, Math.PI * 2);
-          ctx.fillStyle = "#ff8888";
+          ctx.arc(px, py, 5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ef4444";
           ctx.fill();
         }
       });
 
-      // Draw nodes (40 infrastructure assets)
+      // Draw 40 Nodes with high-contrast text pills
       nodes.forEach(n => {
         const pos = nodePos[n.id];
         if (!pos) return;
@@ -162,67 +148,70 @@ export default function GraphVisualization({ result, graphData }) {
         const isActivePath = activePathIds.includes(n.id);
         const isStartNode = activePathIds[0] === n.id;
         const isTargetNode = activePathIds[activePathIds.length - 1] === n.id;
+        const isHighlightedBySearch = searchQuery && (n.name.toLowerCase().includes(searchQuery.toLowerCase()) || n.id.toLowerCase().includes(searchQuery.toLowerCase()));
 
         if (viewMode === "attack_path" && !isActivePath) return;
 
-        // Animated glowing halo for active attack path nodes
+        // Halo ring for active path nodes
         if (isActivePath) {
-          const haloRadius = 14 + Math.sin(pulseTime * 3) * 3;
+          const haloR = 15 + Math.sin(animTime * 3) * 3;
           ctx.beginPath();
-          ctx.arc(pos.x, pos.y, haloRadius, 0, Math.PI * 2);
-          ctx.fillStyle = isStartNode || isTargetNode ? "rgba(239, 68, 68, 0.3)" : "rgba(249, 115, 22, 0.25)";
+          ctx.arc(pos.x, pos.y, haloR, 0, Math.PI * 2);
+          ctx.fillStyle = isStartNode || isTargetNode ? "rgba(239, 68, 68, 0.25)" : "rgba(249, 115, 22, 0.2)";
           ctx.fill();
         }
 
-        // Inner node body
+        // Inner node dot
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
 
         if (isStartNode) {
-          ctx.fillStyle = "#ef4444"; // Bright red for attack origin
+          ctx.fillStyle = "#dc2626";
         } else if (isTargetNode) {
-          ctx.fillStyle = "#dc2626"; // Deep red for compromised target
+          ctx.fillStyle = "#b91c1c";
         } else if (isActivePath) {
-          ctx.fillStyle = "#f97316"; // Hop orange
+          ctx.fillStyle = "#ea580c";
+        } else if (isHighlightedBySearch) {
+          ctx.fillStyle = "#2563eb";
         } else if (n.criticality >= 4) {
-          ctx.fillStyle = "#3b82f6"; // Critical asset electric blue
+          ctx.fillStyle = "#0284c7";
         } else {
-          ctx.fillStyle = "#475569"; // Standard node slate
+          ctx.fillStyle = "#64748b";
         }
 
         ctx.fill();
-        ctx.strokeStyle = "#0f172a";
+        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Render clean label badge with staggered placement to prevent overlapping
+        // Node Label with Crisp Background Pill (Zero Character Overlap)
         const labelText = n.name || n.id;
-        ctx.font = isActivePath ? "bold 11px system-ui" : "10px system-ui";
-        const textWidth = ctx.measureText(labelText).width;
+        ctx.font = isActivePath ? "bold 11.5px system-ui" : "11px system-ui";
+        const textMetrics = ctx.measureText(labelText);
+        const textW = textMetrics.width;
 
-        const ly = pos.labelPosition === "top" ? pos.y - 14 : pos.y + 22;
+        const ly = pos.labelPos === "top" ? pos.y - 14 : pos.y + 24;
 
-        // Background pill behind label for 100% legibility
-        ctx.fillStyle = isActivePath ? "rgba(15, 23, 42, 0.9)" : "rgba(15, 23, 42, 0.75)";
+        // Background pill
+        ctx.fillStyle = isActivePath ? "rgba(254, 226, 226, 0.95)" : "rgba(255, 255, 255, 0.95)";
         ctx.beginPath();
-        ctx.roundRect(pos.x - textWidth / 2 - 4, ly - 10, textWidth + 8, 14, 4);
+        ctx.roundRect(pos.x - textW / 2 - 6, ly - 11, textW + 12, 16, 4);
         ctx.fill();
-        ctx.strokeStyle = isActivePath ? (isStartNode ? "#ef4444" : "#f97316") : "#1e293b";
+        ctx.strokeStyle = isActivePath ? "#fca5a5" : "#cbd5e1";
         ctx.lineWidth = 1;
         ctx.stroke();
 
         // Label text
-        ctx.fillStyle = isActivePath ? "#ffffff" : "#cbd5e1";
+        ctx.fillStyle = isActivePath ? "#991b1b" : "#0f172a";
         ctx.textAlign = "center";
         ctx.fillText(labelText, pos.x, ly);
       });
 
-      animationFrameId = requestAnimationFrame(render);
+      animFrame = requestAnimationFrame(render);
     };
 
     render();
 
-    // Interactive mouse movement for node tooltips
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -232,8 +221,8 @@ export default function GraphVisualization({ result, graphData }) {
       Object.values(nodePos).forEach(pos => {
         const dx = mx - pos.x;
         const dy = my - pos.y;
-        if (dx * dx + dy * dy <= 144) {
-          found = { ...pos.node, icon: pos.icon };
+        if (dx * dx + dy * dy <= 160) {
+          found = pos.node;
         }
       });
       setHoveredNode(found);
@@ -242,33 +231,45 @@ export default function GraphVisualization({ result, graphData }) {
     canvas.addEventListener("mousemove", handleMouseMove);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(animFrame);
       canvas.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [nodes, edges, activePathIds, viewMode]);
+  }, [nodes, edges, activePathIds, viewMode, searchQuery]);
 
   return (
-    <div className="card">
-      <div className="graph-header">
+    <div className="graph-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#f8fafc" }}>
-            Network Topology & Attack Traversal Graph
-          </div>
-          <div className="muted" style={{ fontSize: 12.5 }}>
-            Interactive 2D graph of all {nodes.length} infrastructure assets and {edges.length} attack vectors
+          <div className="card-title">Network Attack Path Graph</div>
+          <div className="card-subtitle" style={{ marginBottom: 0 }}>
+            Expanded view of 40 nodes and 58 edges with anti-overlap word positioning
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="Search 40 nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: "6px 12px",
+              fontSize: 12,
+              border: "1px solid #cbd5e1",
+              borderRadius: 6,
+              outline: "none"
+            }}
+          />
           <button
-            style={{ fontSize: 12, padding: "5px 12px" }}
-            className={viewMode === "all" ? "active" : ""}
+            className={`scenario-btn ${viewMode === "all" ? "active" : ""}`}
+            style={{ padding: "6px 12px", fontSize: 12 }}
             onClick={() => setViewMode("all")}
           >
             All 40 Nodes
           </button>
           <button
-            style={{ fontSize: 12, padding: "5px 12px" }}
-            className={viewMode === "attack_path" ? "active" : ""}
+            className={`scenario-btn ${viewMode === "attack_path" ? "active" : ""}`}
+            style={{ padding: "6px 12px", fontSize: 12 }}
             onClick={() => setViewMode("attack_path")}
           >
             Attack Path Only
@@ -276,51 +277,52 @@ export default function GraphVisualization({ result, graphData }) {
         </div>
       </div>
 
-      <div className="graph-canvas-container">
+      <div className="graph-canvas-box">
         <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
       </div>
 
       {hoveredNode && (
         <div style={{
-          marginTop: 12,
+          marginTop: 10,
           padding: "10px 14px",
-          background: "#0b1120",
-          border: "1px solid #3b82f6",
+          background: "#ffffff",
+          border: "1px solid #2563eb",
           borderRadius: 8,
           fontSize: 13,
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center"
+          alignItems: "center",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
         }}>
           <div>
-            <span>{hoveredNode.icon} <strong>{hoveredNode.name}</strong></span> ({hoveredNode.id}) — <span className="muted">{hoveredNode.unit}</span>
+            <strong>{hoveredNode.name}</strong> ({hoveredNode.id}) — <span className="muted">{hoveredNode.unit}</span>
           </div>
-          <div style={{ fontSize: 12.5 }}>
-            Criticality: <span style={{ color: hoveredNode.criticality >= 4 ? "#ef4444" : "#60a5fa", fontWeight: 600 }}>{hoveredNode.criticality}/5</span>
-            {hoveredNode.record_count > 0 && ` | Records Exposed: ${hoveredNode.record_count.toLocaleString()}`}
+          <div>
+            Criticality: <span style={{ color: hoveredNode.criticality >= 4 ? "#dc2626" : "#2563eb", fontWeight: 700 }}>{hoveredNode.criticality}/5</span>
+            {hoveredNode.record_count > 0 && ` | Records: ${hoveredNode.record_count.toLocaleString()}`}
           </div>
         </div>
       )}
 
-      <div className="graph-legend">
+      <div className="graph-legend-light">
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: "#ef4444" }}></div>
-          <span>Attack Start (Entrypoint)</span>
+          <div className="legend-dot" style={{ background: "#dc2626" }}></div>
+          <span>Start Asset (Entrypoint)</span>
         </div>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: "#f97316" }}></div>
+          <div className="legend-dot" style={{ background: "#ea580c" }}></div>
           <span>Traversal Hop</span>
         </div>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: "#dc2626" }}></div>
-          <span>Compromised Data Target</span>
+          <div className="legend-dot" style={{ background: "#b91c1c" }}></div>
+          <span>Target Database</span>
         </div>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: "#3b82f6" }}></div>
+          <div className="legend-dot" style={{ background: "#0284c7" }}></div>
           <span>Critical System (&ge;4)</span>
         </div>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: "#475569" }}></div>
+          <div className="legend-dot" style={{ background: "#64748b" }}></div>
           <span>Infrastructure Node</span>
         </div>
       </div>

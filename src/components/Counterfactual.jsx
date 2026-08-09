@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getCounterfactual } from "../api/client";
 
 export default function Counterfactual({ scenarioId }) {
@@ -22,17 +22,17 @@ export default function Counterfactual({ scenarioId }) {
 
   return (
     <div className="card">
-      <div style={{ fontSize: 14, marginBottom: 4 }}>What to fix first</div>
-      <div className="muted" style={{ fontSize: 12, marginBottom: 14 }}>
+      <div className="card-title">What to fix first</div>
+      <div className="card-subtitle">
         We removed each connection, re-ran the analysis, and ranked by improvement.
         {" "}{data.edges_tested} connections tested.
       </div>
 
-      <div style={{ fontSize: 34, fontWeight: 600, marginBottom: 14 }}>
+      <div style={{ fontSize: 32, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>
         {shownScore}
         <span className="muted" style={{ fontSize: 16 }}> / 100</span>
         {picked && (
-          <span className="drop" style={{ fontSize: 16, marginLeft: 10 }}>
+          <span className="drop-badge" style={{ fontSize: 16, marginLeft: 10 }}>
             −{picked.percent_drop}%
           </span>
         )}
@@ -41,20 +41,20 @@ export default function Counterfactual({ scenarioId }) {
       {data.recommendations.map((r) => (
         <div
           key={`${r.source}-${r.target}`}
-          className={`card fix ${picked === r ? "active" : ""}`}
+          className={`fix-card ${picked === r ? "active" : ""}`}
           onClick={() => setPicked(picked === r ? null : r)}
         >
-          <div style={{ fontSize: 13 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
             Cut <strong>{r.source_name}</strong> &rarr; <strong>{r.target_name}</strong>
           </div>
-          <div style={{ fontSize: 12, margin: "4px 0" }}>
+          <div style={{ fontSize: 12, margin: "4px 0", color: "var(--text-secondary)" }}>
             {r.baseline_score} &rarr; {r.new_score}{" "}
-            <span className="drop">−{r.percent_drop}%</span>
+            <span className="drop-badge">−{r.percent_drop}%</span>
           </div>
-          <div className="muted" style={{ fontSize: 11 }}>
+          <div className="muted" style={{ fontSize: 11.5 }}>
             {r.reason}
           </div>
-          <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+          <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
             {r.assets_closed > 0
               ? `Closes off ${r.assets_closed} systems`
               : "Closes nothing — makes everything harder to reach"}

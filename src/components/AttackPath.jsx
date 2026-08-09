@@ -1,8 +1,20 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function AttackPath({ result }) {
   const path = result.headline_path;
   const [shown, setShown] = useState(0);
+
+  // Friendly display names for path nodes matching photo
+  const friendlyNames = {
+    jira: "Jira",
+    github_org: "GitHub org",
+    repo_payments: "payments-api",
+    aws_prod_account: "AWS prod",
+    s3_customer_backups: "S3 backups",
+    prod_db_master: "Customer DB",
+    zendesk: "Zendesk",
+    salesforce: "Salesforce"
+  };
 
   useEffect(() => {
     if (!path) return;
@@ -15,45 +27,52 @@ export default function AttackPath({ result }) {
         }
         return n + 1;
       });
-    }, 600);
+    }, 500);
     return () => clearInterval(timer);
-  }, [result.start_asset, path]);
+  }, [result?.start_asset, path]);
 
   if (!path) {
     return (
-      <div className="card">
-        <div className="muted">No path to a data store in this scenario.</div>
+      <div className="attack-path-box">
+        <div className="card-title">Attack path</div>
+        <div className="card-subtitle">No path to a data store in this scenario.</div>
       </div>
     );
   }
 
+  const pathList = path.path;
+  const activeStep = path.steps && path.steps.length > 0 ? path.steps[Math.min(2, path.steps.length - 1)] : null;
+
   return (
-    <div className="card">
-      <div style={{ fontSize: 14, marginBottom: 4 }}>Attack path</div>
-      <div className="muted" style={{ fontSize: 12, marginBottom: 14 }}>
-        Discovered by traversal, not written by us
+    <div className="attack-path-box">
+      <div className="card-title">Attack path</div>
+      <div className="card-subtitle">Discovered by traversal, not authored</div>
+
+      <div className="chain-container">
+        {pathList.map((id, i) => {
+          const isTarget = i === pathList.length - 1;
+          const name = friendlyNames[id] || id;
+
+          return (
+            <React.Fragment key={id}>
+              <div
+                className={`chain-pill ${i < shown ? "show" : ""} ${isTarget ? "target" : ""}`}
+              >
+                {name}
+              </div>
+              {i < pathList.length - 1 && (
+                <span className="chain-arrow">&rarr;</span>
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
-      <div className="chain">
-        {path.path.map((id, i) => (
-          <span key={id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className={`node ${i < shown ? "show" : ""} ${i === 0 || i === path.path.length - 1 ? "hot" : ""}`}>
-              {id}
-            </span>
-            {i < path.path.length - 1 && <span className="muted">&rarr;</span>}
-          </span>
-        ))}
-      </div>
-
-      {shown >= path.path.length && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
-          {path.steps.map((s) => (
-            <div key={s.step} style={{ fontSize: 12, marginBottom: 6 }}>
-              <span className="muted">Step {s.step}</span>{" "}
-              <span style={{ color: "#ffb4b4" }}>{s.mitre_technique}</span>{" "}
-              {s.reason}
-            </div>
-          ))}
+      {activeStep && (
+        <div className="step-summary">
+          <span style={{ color: "var(--muted)", marginRight: 6 }}>Step {activeStep.step}</span>
+          <span className="step-tag">{activeStep.mitre_technique}</span>
+          {activeStep.reason}
         </div>
       )}
     </div>
