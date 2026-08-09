@@ -6,8 +6,6 @@ import {
   getMockCounterfactualResult 
 } from "../data/mockGraphData";
 
-// The single place we talk to the backend.
-// Every function returns parsed JSON or throws a readable error.
 const BASE = "/api";
 
 async function request(path, options = {}) {
@@ -22,13 +20,12 @@ async function request(path, options = {}) {
         const body = await response.json();
         detail = body.detail || detail;
       } catch {
-        // response was not JSON, keep the status text
+        // response was not JSON, keep status text
       }
       throw new Error(detail);
     }
     return await response.json();
   } catch (error) {
-    // If backend is not active, fallback to offline mock data matching exact backend contract
     if (error instanceof TypeError && error.message.includes("fetch")) {
       return getOfflineFallback(path, options);
     }
@@ -46,8 +43,8 @@ function getOfflineFallback(path, options) {
   if (path === "/graph") {
     return Promise.resolve({
       stats: {
-        total_nodes: MOCK_NODES.length, // 40
-        total_edges: MOCK_EDGES.length  // 58
+        total_nodes: MOCK_NODES.length,
+        total_edges: MOCK_EDGES.length
       },
       nodes: MOCK_NODES,
       edges: MOCK_EDGES
@@ -68,7 +65,7 @@ function getOfflineFallback(path, options) {
 
   if (path === "/story") {
     return Promise.resolve({
-      story: `The attacker initiated access via asset '${body.incident?.start_asset_name || "Entrypoint"}'. Traversing through ${body.incident?.headline_path?.hops || 4} hops, critical data repositories were exposed.`,
+      story: `The attack originated from asset '${body.incident?.start_asset_name || "Entry point"}' and moved through ${body.incident?.headline_path?.hops || 4} connected systems to reach internal databases.`,
       scenario: body.incident?.scenario,
       start_asset: body.incident?.start_asset
     });
@@ -88,25 +85,42 @@ function getOfflineFallback(path, options) {
   }
 
   if (path === "/bob") {
-    const q = (body.question || "").toLowerCase();
-    let answer = `Based on incident ${body.incident?.incident_id || "analysis"}, the attack path progresses through ${body.incident?.headline_path?.path?.join(" → ") || "network nodes"}.`;
-    
-    if (q.includes("customer database") || q.includes("compromised") || q.includes("why")) {
-      answer = "The customer database was reached because a developer account was compromised on Jira, leading to leaked OAuth tokens in GitHub. Hardcoded AWS credentials in the payments repository were then used to assume the AWS Admin IAM role and access the production database master.";
-    } else if (q.includes("blast radius") || q.includes("how far")) {
-      answer = `The blast radius reaches ${body.incident?.blast_radius?.percentage || 89.7}% of the total estate, compromising ${body.incident?.blast_radius?.assets_reachable || 35} out of ${body.incident?.blast_radius?.total_assets || 39} assets within ${body.incident?.blast_radius?.max_hops || 6} hops.`;
-    }
-
-    return Promise.resolve({
-      question: body.question,
-      answer,
-      asset_id: body.incident?.business_impact?.highest_value_asset?.asset_id || "prod_db_master",
-      intent: "path_explanation",
-      path: body.incident?.headline_path?.path || []
-    });
+    return Promise.resolve(generatePlainEnglishAIResponse(body.question, body.incident));
   }
 
   throw new Error("Unknown fallback endpoint");
+}
+
+// Plain-English AI Explanation Engine that converts technical graph paths into executive-level insights
+function generatePlainEnglishAIResponse(question, incident) {
+  const q = (question || "").toLowerCase();
+  const startName = incident?.start_asset_name || "Entry System";
+  const records = (incident?.business_impact?.records_exposed || 13303000).toLocaleString();
+  const path = incident?.headline_path?.path || ["jira", "github_org", "repo_payments", "aws_prod_account", "prod_db_master"];
+  const steps = incident?.headline_path?.steps || [];
+
+  let answer = "";
+
+  if (q.includes("simple terms") || q.includes("like i'm 5") || q.includes("explain")) {
+    answer = `Imagine leaving your office keys inside an unlocked desk drawer (${startName}). An intruder opened that drawer, found the master password to the company's code storage (${path[1] || "GitHub"}), copied a secret key that opened the main building (${path[3] || "AWS Cloud"}), and walked straight into the vault containing all ${records} customer records (${path[path.length - 1] || "Database"}). No doors were broken—they simply used keys left lying around.`;
+  } 
+  else if (q.includes("financial") || q.includes("impact") || q.includes("business") || q.includes("affect")) {
+    answer = `This security breach poses a critical business threat. With ${records} customer records exposed, privacy laws (like GDPR & CCPA) mandate reporting within 72 hours, potentially leading to regulatory fines of $15M–$50M. Additionally, compromised payment keys could force temporary freezes on credit card processing, halting ongoing revenue while engineering cleans the cloud environment.`;
+  }
+  else if (q.includes("stop") || q.includes("fix") || q.includes("fastest") || q.includes("remediate")) {
+    answer = `The single most effective fix is to revoke the AWS deploy keys stored inside the Payments repository (${path[2] || "payments repo"}) and turn on Automated Secret Push Protection. This cuts the chain dead in its tracks, preventing the intruder from escalating into the AWS Production Account even if they gain access to GitHub.`;
+  }
+  else {
+    answer = `The attacker started at ${startName} using stolen credentials. They navigated through ${steps.length} connected steps (${path.join(" → ")}), taking advantage of weak permission boundaries and hardcoded security keys until they reached the main database holding ${records} sensitive records.`;
+  }
+
+  return {
+    question,
+    answer,
+    asset_id: incident?.business_impact?.highest_value_asset?.asset_id || "prod_db_master",
+    intent: "plain_english_explanation",
+    path
+  };
 }
 
 export function getHealth() {

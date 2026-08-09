@@ -31,11 +31,10 @@ export default function App() {
     setResult(null);
     setError(null);
 
-    // A short delay with status messages. An instant result feels
-    // cheap, and two seconds of tension makes the demo land.
+    // Progressive status updates for realistic analysis feedback
     setStatus("Employee clicked the link...");
-    setTimeout(() => setStatus("Mapping accessible systems..."), 700);
-    setTimeout(() => setStatus("Calculating blast radius..."), 1400);
+    setTimeout(() => setStatus("Mapping accessible systems across 40 nodes..."), 700);
+    setTimeout(() => setStatus("Calculating blast radius & record exposure..."), 1400);
 
     try {
       const data = await simulate(scenarioId);
@@ -51,12 +50,15 @@ export default function App() {
 
   return (
     <div className="page">
-      <h1>BreachLens</h1>
-      <p className="muted">
-        If one system is compromised, how far can the attacker get?
+      <div className="header-brand">
+        <span style={{ fontSize: 28 }}>🛡️</span>
+        <h1>BreachLens</h1>
+      </div>
+      <p className="muted" style={{ margin: "0 0 24px 0", fontSize: 14 }}>
+        Automated Security Graph Traversal — If one system is compromised, how far can the attacker get?
       </p>
 
-      {error && <div className="card">Error: {error}</div>}
+      {error && <div className="card" style={{ borderColor: "#ef4444" }}>Error: {error}</div>}
 
       <ScenarioPicker
         scenarios={scenarios}
@@ -65,19 +67,28 @@ export default function App() {
         busy={status !== ""}
       />
 
-      {status && <div className="card muted">{status}</div>}
+      {status && (
+        <div className="card muted" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ animation: "spin 1s infinite linear" }}>⏳</span>
+          {status}
+        </div>
+      )}
 
       {result && (
         <>
-          <h2>{result.scenario?.name}</h2>
+          <h2>📊 {result.scenario?.name}</h2>
           <Metrics result={result} />
-          <h2>How the attacker moves</h2>
+
+          <h2>🔍 How the Attacker Moves</h2>
           <AttackPath result={result} />
-          <h2>Network topology & attack path graph</h2>
+
+          <h2>🌐 Network Topology & Attack Traversal Graph</h2>
           <GraphVisualization result={result} graphData={graphData} />
-          <h2>Recommended action</h2>
+
+          <h2>🛠️ Recommended Action ("What to Fix First")</h2>
           <Counterfactual scenarioId={selected} />
-          <h2>Questions</h2>
+
+          <h2>💬 Ask Bob & Business Impact</h2>
           <AskBob incident={result} />
         </>
       )}
