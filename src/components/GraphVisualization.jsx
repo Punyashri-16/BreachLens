@@ -255,7 +255,7 @@ export default function GraphVisualization({ result, graphData }) {
           borderRadius: 6,
           fontSize: 12,
           display: "flex",
-          justify-content: "space-between",
+          justifyContent: "space-between",
           alignItems: "center"
         }}>
           <div>
