@@ -1,0 +1,192 @@
+:root {
+  --bg: #14161a;
+  --card: #1e2126;
+  --line: #2c3038;
+  --text: #e8eaed;
+  --muted: #9aa0a6;
+  --danger: #ef4444;
+  --danger-bg: #2a1515;
+  --good: #4ade80;
+  --accent: #3b82f6;
+  --accent-bg: #1e293b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+h1 {
+  font-size: 26px;
+  margin: 0 0 4px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 17px;
+  margin: 32px 0 12px;
+  letter-spacing: -0.2px;
+}
+
+.muted { color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin: 0 8px 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.active {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: #fca5a5;
+  font-weight: 500;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.metric .big {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.metric small {
+  color: var(--muted);
+}
+
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.node {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--line);
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.2s ease;
+}
+
+.node.show {
+  opacity: 1;
+}
+
+.node.hot {
+  background: var(--danger-bg);
+  color: #ffb4b4;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.fix {
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.fix:hover {
+  border-color: var(--muted);
+}
+
+.fix.active {
+  border-color: var(--danger);
+  background: rgba(42, 21, 21, 0.6);
+}
+
+.drop {
+  color: var(--good);
+  font-weight: 600;
+}
+
+/* Interactive Attack Path Graph Visualization Styles */
+.graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.graph-badge {
+  background: #262b33;
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--line);
+}
+
+.graph-canvas-container {
+  width: 100%;
+  height: 480px;
+  background: #111317;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.graph-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #181a20;
+  border-radius: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
