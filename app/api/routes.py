@@ -116,6 +116,24 @@ def simulate(request: SimulateRequest):
         risk = assess(graph, bfs_result)
 
         techniques = summarise_techniques(bfs_result["reachable"])
+        attack_edges = []
+        seen = set()
+        for item in bfs_result["reachable"]:
+            p = item["path"]
+            for i in range(len(p) - 1):
+                pair = (p[i], p[i + 1])
+                if pair in seen:
+                    continue
+                seen.add(pair)
+                edge = graph.edges[p[i], p[i + 1]]
+                attack_edges.append({
+                    "id": f"{p[i]}--{p[i+1]}",
+                    "source": p[i],
+                    "target": p[i + 1],
+                    "relationship_type": edge["relationship_type"],
+                    "mitre_technique": edge["mitre_technique"],
+                    "reason": edge["reason"],
+                })
 
         data_assets = [
             r for r in bfs_result["reachable"] if r.get("record_count", 0) > 0
@@ -134,6 +152,7 @@ def simulate(request: SimulateRequest):
             "start_asset": start_asset,
             "start_asset_name": graph.nodes[start_asset]["name"],
             "reachable": bfs_result["reachable"],
+            "attack_edges": attack_edges,
             "total_reached": bfs_result["total_reached"],
             "risk_score": risk["risk_score"],
             "blast_radius": risk["blast_radius"],
